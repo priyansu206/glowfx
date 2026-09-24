@@ -1,0 +1,15 @@
+# Frontend
+node_modules/
+dist/
+
+# Rust
+src-tauri/target/
+
+# Tauri generated
+src-tauri/gen/schemas/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+.DS_Store
