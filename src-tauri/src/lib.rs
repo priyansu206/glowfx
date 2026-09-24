@@ -277,6 +277,16 @@ fn set_autostart_impl(_enabled: bool) -> Result<(), String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    #[cfg(target_os = "linux")]
+    {
+        // WebKitGTK's accelerated compositor trips a Wayland protocol error on
+        // some compositors ("Error 71 dispatching to Wayland display").
+        // Falling back to the software compositor is harmless and fixes the crash.
+        if std::env::var("WAYLAND_DISPLAY").is_ok() {
+            std::env::set_var("WEBKIT_DISABLE_COMPOSITING_MODE", "1");
+        }
+    }
+
     let driver = driver::detect_driver();
     let manager = effects::EffectManager::new(driver);
 
