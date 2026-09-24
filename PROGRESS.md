@@ -18,11 +18,13 @@
   - Brightness restored to max (2) on exit / SIGTERM / SIGINT / non-ctrl-c `drop`.
 - **Effects** (`effects/`): Off, Static, Breathing (sine, min/max ranged), Strobing
   (square/decay), Audio (RMS loopback + beat-sync mode), Battery Guard (SOS at
-  critical level, charge-complete pulse), Candle (ember flicker), Heartbeat
-  (lub-dub), Blink, Disco, Schedule (time-of-day), Idle (DBus ScreenSaver auto-fade).
+  critical level, charge-complete pulse), Radar (rotating sweep + random target
+  blips), Morse (blinks a user-typed message), Disco (random bursts), Schedule
+  (time-of-day), Idle (DBus ScreenSaver auto-fade).
   Params are shared atomics — sliders take effect instantly without restarting loops.
 - **Tuning**: per-mode min/max levels, square/decay waveforms, audio beat sync,
-  central auto-dim timeout, critical battery %, schedule hours, idle grace.
+  morse message, central auto-dim timeout, critical battery %, schedule hours,
+  idle grace.
 - **Tauri plumbing**: ~24 IPC commands, system tray with Effects submenu, per-OS
   autostart (Linux `~/.config/autostart`, Windows winreg, macOS unsupported),
   Linux udev-rule installer (reloads udev + chmods live node).
@@ -31,19 +33,22 @@
 ### Frontend (`src/`)
 - Dark-themed single-page UI: status header (power / mode / battery / hardware),
   effect cards for all 11 modes, speed + sensitivity sliders, per-mode options
-  (level range, waveform, reactivity), settings panel (udev access, autostart,
-  tray-close, auto-dim, critical %, schedule hours, idle grace). Typed IPC layer in
+  (level range, waveform, reactivity, morse message), settings panel (udev access,
+  autostart, tray-close, auto-dim, critical %, schedule hours, idle grace). Typed
+  IPC layer in
   `src/api.ts`.
 
 ## Verification
 - `cargo check`: 0 errors / 0 warnings (all crates, Linux).
 - `npm run build` (strict tsc + vite): passes.
 - `npx tauri build --no-bundle`: full config + capabilities validated, UI embedded.
-- Unit tests: 6/6 pass, including live write-quantization and live runs of the new
-  effect loops (Candle/Blink/Heartbeat/Disco) against the real backlight.
+- Unit tests: 6/6 pass, including live write-quantization and live runs of the
+  effect loops (Radar/Morse/Disco) against the real backlight.
 - Live smoke tests on this machine: launched under Wayland and X11, tray initialized,
   driver detected, clean exit, udev write access confirmed (node `-rw-rw-rw-`).
-- Final release binary: 4.8 MB at `src-tauri/target/release/glowfx`.
+- Final release binary at `src-tauri/target/release/glowfx`. Candle/Heartbeat/Blink
+  were removed and Storm/Ripple were folded into Disco/Radar to kill duplicate
+  patterns on the 3-state {0,1,2} hardware.
 
 ## Known limitations
 - `.deb` bundling impossible on this Arch host (no `dpkg`); AppImage needs the
@@ -58,3 +63,7 @@
 - `4ccf3f4` Wayland/WebKitGTK crash fix (`WEBKIT_DISABLE_COMPOSITING_MODE=1`)
 - `8c59b0b` progress + chat-memory docs; build gotcha recorded
 - `daab449` six new effects + tuning enhancements
+- `d0ef0b3` README with requirements / build / per-OS setup
+- `66e5e3c` replace blink/candle/heartbeat with storm, ripple, morse
+- `07214d2` add radar sweep effect with target blips
+- `50b8ab5` consolidate effects: merge storm+ripple into disco+radar
