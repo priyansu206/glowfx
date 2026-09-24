@@ -88,6 +88,55 @@ fn set_static_level(state: State<'_, AppState>, level: u8) -> Result<(), String>
 }
 
 #[tauri::command]
+fn set_min_level(state: State<'_, AppState>, level: u8) -> Result<(), String> {
+    state.manager.params().min_level.store(level.clamp(0, 2), Ordering::Relaxed);
+    Ok(())
+}
+
+#[tauri::command]
+fn set_max_level(state: State<'_, AppState>, level: u8) -> Result<(), String> {
+    state.manager.params().max_level.store(level.clamp(0, 2), Ordering::Relaxed);
+    Ok(())
+}
+
+#[tauri::command]
+fn set_waveform(state: State<'_, AppState>, waveform: u8) -> Result<(), String> {
+    state.manager.params().waveform.store(waveform.clamp(0, 1), Ordering::Relaxed);
+    Ok(())
+}
+
+#[tauri::command]
+fn set_audio_beat(state: State<'_, AppState>, on: bool) -> Result<(), String> {
+    state.manager.params().audio_beat.store(on, Ordering::Relaxed);
+    Ok(())
+}
+
+#[tauri::command]
+fn set_auto_dim(state: State<'_, AppState>, minutes: u16) -> Result<(), String> {
+    state.manager.params().auto_dim_minutes.store(minutes, Ordering::Relaxed);
+    Ok(())
+}
+
+#[tauri::command]
+fn set_critical_threshold(state: State<'_, AppState>, threshold: u8) -> Result<(), String> {
+    state.manager.params().critical_threshold.store(threshold.clamp(1, 50), Ordering::Relaxed);
+    Ok(())
+}
+
+#[tauri::command]
+fn set_schedule_hours(state: State<'_, AppState>, day: u8, night: u8) -> Result<(), String> {
+    state.manager.params().day_start_hour.store(day % 24, Ordering::Relaxed);
+    state.manager.params().night_start_hour.store(night % 24, Ordering::Relaxed);
+    Ok(())
+}
+
+#[tauri::command]
+fn set_idle_grace(state: State<'_, AppState>, seconds: u16) -> Result<(), String> {
+    state.manager.params().idle_grace_s.store(seconds.max(15), Ordering::Relaxed);
+    Ok(())
+}
+
+#[tauri::command]
 fn set_tray_close(state: State<'_, AppState>, enabled: bool) -> Result<(), String> {
     state.manager.params().tray_close.store(enabled, Ordering::Relaxed);
     Ok(())
@@ -101,6 +150,15 @@ struct StatusInfo {
     interval_ms: u64,
     speed: u8,
     sensitivity: u32,
+    min_level: u8,
+    max_level: u8,
+    waveform: u8,
+    audio_beat: bool,
+    auto_dim_minutes: u16,
+    critical_threshold: u8,
+    day_start_hour: u8,
+    night_start_hour: u8,
+    idle_grace_s: u16,
     driver_supported: bool,
     driver_path: String,
     driver_error: Option<String>,
@@ -142,6 +200,15 @@ fn get_status(state: State<'_, AppState>) -> StatusInfo {
         interval_ms,
         speed,
         sensitivity,
+        min_level: p.min_level.load(Ordering::Relaxed),
+        max_level: p.max_level.load(Ordering::Relaxed),
+        waveform: p.waveform.load(Ordering::Relaxed),
+        audio_beat: p.audio_beat.load(Ordering::Relaxed),
+        auto_dim_minutes: p.auto_dim_minutes.load(Ordering::Relaxed),
+        critical_threshold: p.critical_threshold.load(Ordering::Relaxed),
+        day_start_hour: p.day_start_hour.load(Ordering::Relaxed),
+        night_start_hour: p.night_start_hour.load(Ordering::Relaxed),
+        idle_grace_s: p.idle_grace_s.load(Ordering::Relaxed),
         driver_supported,
         driver_path,
         driver_error,
@@ -308,6 +375,14 @@ pub fn run() {
             set_sensitivity,
             set_battery_threshold,
             set_static_level,
+            set_min_level,
+            set_max_level,
+            set_waveform,
+            set_audio_beat,
+            set_auto_dim,
+            set_critical_threshold,
+            set_schedule_hours,
+            set_idle_grace,
             set_tray_close,
             get_status,
             install_udev,

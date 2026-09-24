@@ -6,6 +6,12 @@ export const MODES = [
   "strobing",
   "audio",
   "battery",
+  "candle",
+  "heartbeat",
+  "blink",
+  "disco",
+  "schedule",
+  "idle",
 ] as const;
 
 export type Mode = (typeof MODES)[number];
@@ -23,6 +29,15 @@ export interface StatusInfo {
   interval_ms: number;
   speed: number;
   sensitivity: number;
+  min_level: number;
+  max_level: number;
+  waveform: number;
+  audio_beat: boolean;
+  auto_dim_minutes: number;
+  critical_threshold: number;
+  day_start_hour: number;
+  night_start_hour: number;
+  idle_grace_s: number;
   driver_supported: boolean;
   driver_path: string;
   driver_error: string | null;
@@ -72,6 +87,38 @@ export function setAutostart(enabled: boolean): Promise<void> {
 
 export function setTrayClose(enabled: boolean): Promise<void> {
   return invoke("set_tray_close", { enabled });
+}
+
+export function setMinLevel(level: number): Promise<void> {
+  return invoke("set_min_level", { level });
+}
+
+export function setMaxLevel(level: number): Promise<void> {
+  return invoke("set_max_level", { level });
+}
+
+export function setWaveform(waveform: number): Promise<void> {
+  return invoke("set_waveform", { waveform });
+}
+
+export function setAudioBeat(on: boolean): Promise<void> {
+  return invoke("set_audio_beat", { on });
+}
+
+export function setAutoDim(minutes: number): Promise<void> {
+  return invoke("set_auto_dim", { minutes });
+}
+
+export function setCriticalThreshold(threshold: number): Promise<void> {
+  return invoke("set_critical_threshold", { threshold });
+}
+
+export function setScheduleHours(day: number, night: number): Promise<void> {
+  return invoke("set_schedule_hours", { day, night });
+}
+
+export function setIdleGrace(seconds: number): Promise<void> {
+  return invoke("set_idle_grace", { seconds });
 }
 
 export function quitApp(): Promise<void> {

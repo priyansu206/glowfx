@@ -384,6 +384,34 @@ body {
   cursor: not-allowed;
 }
 
+.num-input {
+  width: 76px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 13px;
+  text-align: center;
+}
+
+.num-input:focus {
+  outline: none;
+  border-color: var(--accent-strong);
+}
+
+.schedule-pair {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.schedule-sep {
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
 /* ---------- Settings ---------- */
 
 .settings {

@@ -4,18 +4,27 @@ import StatusHeader from "./components/StatusHeader";
 import EffectCard from "./components/EffectCard";
 import SpeedSlider from "./components/SpeedSlider";
 import AudioSens from "./components/AudioSens";
+import ModeOptions from "./components/ModeOptions";
 import SettingsPanel from "./components/SettingsPanel";
 import {
   emptyBattery,
   getStatus,
   quitApp,
+  setAudioBeat,
+  setAutostart,
+  setAutoDim,
+  setCriticalThreshold,
+  setMaxLevel,
+  setMinLevel,
   setMode,
   setPower,
+  setScheduleHours,
   setSensitivity,
   setSpeed,
   setStaticLevel,
-  setAutostart,
   setTrayClose,
+  setWaveform,
+  setIdleGrace,
   type Mode,
   type StatusInfo,
 } from "./api";
@@ -74,7 +83,7 @@ const MODE_META: Record<Mode, ModeMeta> = {
   },
   battery: {
     title: "Battery Guard",
-    description: "Low-battery flash alert",
+    description: "Low-battery SOS + charge pulses",
     icon: (
       <svg viewBox="0 0 24 24" width="26" height="26">
         <rect x="2" y="7" width="17" height="10" rx="2" fill="none" stroke="currentColor" strokeWidth="1.8" />
@@ -83,9 +92,88 @@ const MODE_META: Record<Mode, ModeMeta> = {
       </svg>
     ),
   },
+  candle: {
+    title: "Candle",
+    description: "Random ember flicker",
+    icon: (
+      <svg viewBox="0 0 24 24" width="26" height="26">
+        <path
+          d="M12 2c1 2-1 3 0 5 1.4-1 2-2.5 1.5-4C15 4.5 16 6 16 8a4 4 0 1 1-8 0C8 5 10 2 12 2zM8 14h8v8H8z"
+          fill="currentColor"
+        />
+      </svg>
+    ),
+  },
+  heartbeat: {
+    title: "Heartbeat",
+    description: '"Lub-dub" double thump',
+    icon: (
+      <svg viewBox="0 0 24 24" width="26" height="26">
+        <path
+          d="M3 12h4l2-5 4 10 2-5h6"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.8"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+      </svg>
+    ),
+  },
+  blink: {
+    title: "Blink",
+    description: "Rhythmic on/off",
+    icon: (
+      <svg viewBox="0 0 24 24" width="26" height="26">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <circle cx="12" cy="12" r="3.5" fill="currentColor" />
+      </svg>
+    ),
+  },
+  disco: {
+    title: "Disco",
+    description: "Random burst party",
+    icon: (
+      <svg viewBox="0 0 24 24" width="26" height="26">
+        <circle cx="7" cy="12" r="5" fill="currentColor" opacity="0.6" />
+        <circle cx="17" cy="12" r="3.5" fill="currentColor" />
+      </svg>
+    ),
+  },
+  schedule: {
+    title: "Schedule",
+    description: "Time-of-day brightness",
+    icon: (
+      <svg viewBox="0 0 24 24" width="26" height="26">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" />
+        <path d="M12 7v5l3 3" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+      </svg>
+    ),
+  },
+  idle: {
+    title: "Idle",
+    description: "Auto-fade when inactive",
+    icon: (
+      <svg viewBox="0 0 24 24" width="26" height="26">
+        <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+      </svg>
+    ),
+  },
 };
 
-const MODE_ORDER: Mode[] = ["static", "breathing", "strobing", "audio", "battery"];
+const MODE_ORDER: Mode[] = [
+  "static",
+  "breathing",
+  "strobing",
+  "audio",
+  "battery",
+  "candle",
+  "heartbeat",
+  "blink",
+  "disco",
+  "schedule",
+  "idle",
+];
 
 const EMPTY_STATUS: StatusInfo = {
   power: false,
@@ -94,6 +182,15 @@ const EMPTY_STATUS: StatusInfo = {
   interval_ms: 150,
   speed: 4,
   sensitivity: 60,
+  min_level: 0,
+  max_level: 2,
+  waveform: 0,
+  audio_beat: false,
+  auto_dim_minutes: 0,
+  critical_threshold: 10,
+  day_start_hour: 7,
+  night_start_hour: 22,
+  idle_grace_s: 60,
   driver_supported: false,
   driver_path: "",
   driver_error: null,
@@ -163,11 +260,20 @@ export default function App() {
   const handleSpeed = (v: number) => run("speed", () => setSpeed(v));
   const handleSens = (v: number) => run("sens", () => setSensitivity(v));
   const handleStatic = (v: number) => run("static", () => setStaticLevel(v));
+  const handleMinLevel = (v: number) => run("min", () => setMinLevel(v));
+  const handleMaxLevel = (v: number) => run("max", () => setMaxLevel(v));
+  const handleWaveform = (v: number) => run("wave", () => setWaveform(v));
+  const handleAudioBeat = (on: boolean) => run("beat", () => setAudioBeat(on));
   const handleAutostart = (v: boolean) => run("auto", () => setAutostart(v));
   const handleTray = (v: boolean) => run("tray", () => setTrayClose(v));
+  const handleAutoDim = (v: number) => run("dim", () => setAutoDim(v));
+  const handleCritical = (v: number) => run("crit", () => setCriticalThreshold(v));
+  const handleSchedule = (day: number, night: number) => run("schedule", () => setScheduleHours(day, night));
+  const handleIdleGrace = (v: number) => run("idle", () => setIdleGrace(v));
   const handleQuit = () => quitApp();
 
   const battery = status.battery ?? emptyBattery();
+  const controlsDisabled = !power || !status.driver_supported;
 
   return (
     <div className="app">
@@ -198,29 +304,27 @@ export default function App() {
             ))}
           </div>
           <div className="controls-grid">
-            <SpeedSlider value={status.speed} disabled={!power || !status.driver_supported} onChange={handleSpeed} />
+            <SpeedSlider value={status.speed} disabled={controlsDisabled} onChange={handleSpeed} />
             <AudioSens
               value={status.sensitivity}
               mode={status.mode}
-              disabled={!power || !status.driver_supported}
+              disabled={controlsDisabled}
               onChange={handleSens}
             />
-            <div className={`control-row${currentMode !== "static" ? " disabled" : ""}`}>
-              <span className="control-label">Static level</span>
-              <div className="level-picker">
-                {[0, 1, 2].map((l) => (
-                  <button
-                    key={l}
-                    type="button"
-                    className={`level-btn${status.static_level === l ? " active" : ""}`}
-                    disabled={currentMode !== "static" || !power || !status.driver_supported}
-                    onClick={() => handleStatic(l)}
-                  >
-                    {["Off", "Low", "High"][l]}
-                  </button>
-                ))}
-              </div>
-            </div>
+            <ModeOptions
+              mode={status.mode}
+              minLevel={status.min_level}
+              maxLevel={status.max_level}
+              waveform={status.waveform}
+              audioBeat={status.audio_beat}
+              staticLevel={status.static_level}
+              disabled={controlsDisabled}
+              onMinLevel={handleMinLevel}
+              onMaxLevel={handleMaxLevel}
+              onWaveform={handleWaveform}
+              onAudioBeat={handleAudioBeat}
+              onStaticLevel={handleStatic}
+            />
           </div>
           {status.audio_error && status.mode === "audio" && (
             <div className="install-result err">Audio: {status.audio_error}</div>
@@ -230,15 +334,24 @@ export default function App() {
         <SettingsPanel
           autostart={status.autostart}
           trayClose={status.tray_close}
+          autoDim={status.auto_dim_minutes}
+          critical={status.critical_threshold}
+          dayHour={status.day_start_hour}
+          nightHour={status.night_start_hour}
+          idleGrace={status.idle_grace_s}
           disabled={busy.has("auto") || busy.has("tray")}
           onAutostart={handleAutostart}
           onTrayClose={handleTray}
+          onAutoDim={handleAutoDim}
+          onCritical={handleCritical}
+          onSchedule={handleSchedule}
+          onIdleGrace={handleIdleGrace}
           onQuit={handleQuit}
         />
       </main>
 
       <footer className="footer">
-        GlowFX v0.1 · {status.os} · writes rate-limited to ≤10 Hz · backlight state {battery.percent}%
+        GlowFX v0.2 · {status.os} · writes rate-limited to ≤10 Hz · battery {battery.percent}%
       </footer>
     </div>
   );

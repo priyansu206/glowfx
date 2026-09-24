@@ -4,12 +4,19 @@
 
 pub mod audio;
 pub mod battery;
+pub mod blink;
 pub mod breathing;
+pub mod candle;
+pub mod disco;
+pub mod heartbeat;
+pub mod idle;
+pub mod schedule;
 pub mod strobing;
 
-use std::sync::atomic::{AtomicBool, AtomicU32, AtomicU8, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU16, AtomicU32, AtomicU8, Ordering};
 use std::sync::{Arc, Mutex as StdMutex};
 use std::thread::{self, JoinHandle};
+use std::time::{Duration, Instant};
 
 use crate::driver::BacklightDriver;
 
@@ -27,6 +34,12 @@ pub enum EffectMode {
     Strobing,
     Audio,
     Battery,
+    Candle,
+    Heartbeat,
+    Blink,
+    Disco,
+    Schedule,
+    Idle,
     Off,
 }
 
@@ -38,20 +51,32 @@ impl EffectMode {
             EffectMode::Strobing => "strobing",
             EffectMode::Audio => "audio",
             EffectMode::Battery => "battery",
+            EffectMode::Candle => "candle",
+            EffectMode::Heartbeat => "heartbeat",
+            EffectMode::Blink => "blink",
+            EffectMode::Disco => "disco",
+            EffectMode::Schedule => "schedule",
+            EffectMode::Idle => "idle",
             EffectMode::Off => "off",
         }
     }
 
     pub fn from_name(name: &str) -> Option<EffectMode> {
-        match name {
-            "static" => Some(EffectMode::Static),
-            "breathing" => Some(EffectMode::Breathing),
-            "strobing" => Some(EffectMode::Strobing),
-            "audio" => Some(EffectMode::Audio),
-            "battery" => Some(EffectMode::Battery),
-            "off" => Some(EffectMode::Off),
-            _ => None,
-        }
+        Some(match name {
+            "static" => EffectMode::Static,
+            "breathing" => EffectMode::Breathing,
+            "strobing" => EffectMode::Strobing,
+            "audio" => EffectMode::Audio,
+            "battery" => EffectMode::Battery,
+            "candle" => EffectMode::Candle,
+            "heartbeat" => EffectMode::Heartbeat,
+            "blink" => EffectMode::Blink,
+            "disco" => EffectMode::Disco,
+            "schedule" => EffectMode::Schedule,
+            "idle" => EffectMode::Idle,
+            "off" => EffectMode::Off,
+            _ => return None,
+        })
     }
 }
 
@@ -61,10 +86,19 @@ impl EffectMode {
 pub struct EffectParams {
     pub power: AtomicBool,
     pub mode: StdMutex<EffectMode>,
-    pub speed: AtomicU8,              // 1..=10
-    pub sensitivity: AtomicU32,       // 0..=100
-    pub static_level: AtomicU8,       // 0..=2
-    pub battery_threshold: AtomicU32, // percent 1..=100
+    pub speed: AtomicU8,               // 1..=10
+    pub sensitivity: AtomicU32,        // 0..=100
+    pub static_level: AtomicU8,        // 0..=2
+    pub battery_threshold: AtomicU32,  // percent 1..=100 (guard dim)
+    pub critical_threshold: AtomicU8,  // percent 1..=50 (SOS blink)
+    pub min_level: AtomicU8,           // per-zone floor for fade modes
+    pub max_level: AtomicU8,           // per-zone ceiling for flash modes
+    pub waveform: AtomicU8,            // 0 = square, 1 = decay
+    pub audio_beat: AtomicBool,        // beat-sync instead of level thresholds
+    pub auto_dim_minutes: AtomicU16,   // 0 = disabled; dim to off after N min
+    pub day_start_hour: AtomicU8,      // schedule: bright window start (0..=23)
+    pub night_start_hour: AtomicU8,    // schedule: dim floor start (0..=23)
+    pub idle_grace_s: AtomicU16,       // idle effect: seconds before fade (>=15)
     pub tray_close: AtomicBool,
 }
 
@@ -77,6 +111,15 @@ impl Default for EffectParams {
             sensitivity: AtomicU32::new(60),
             static_level: AtomicU8::new(BACKLIGHT_HIGH),
             battery_threshold: AtomicU32::new(20),
+            critical_threshold: AtomicU8::new(10),
+            min_level: AtomicU8::new(BACKLIGHT_OFF),
+            max_level: AtomicU8::new(BACKLIGHT_HIGH),
+            waveform: AtomicU8::new(0),
+            audio_beat: AtomicBool::new(false),
+            auto_dim_minutes: AtomicU16::new(0),
+            day_start_hour: AtomicU8::new(7),
+            night_start_hour: AtomicU8::new(22),
+            idle_grace_s: AtomicU16::new(60),
             tray_close: AtomicBool::new(true),
         }
     }
@@ -90,7 +133,38 @@ pub fn interval_from_speed(speed: u8) -> u64 {
 
 /// Sleep no less than 100 ms — the EC write budget is respected everywhere.
 pub fn capped_sleep(interval_ms: u64) {
-    thread::sleep(std::time::Duration::from_millis(interval_ms.max(100)));
+    thread::sleep(Duration::from_millis(interval_ms.max(100)));
+}
+
+/// Per-loop floor/ceiling, clamped and ordered so min <= max regardless of
+/// what the user throws at the UI.
+pub fn level_range(params: &EffectParams) -> (u8, u8) {
+    let min = params.min_level.load(Ordering::Relaxed).clamp(BACKLIGHT_OFF, BACKLIGHT_HIGH);
+    let max = params.max_level.load(Ordering::Relaxed).clamp(BACKLIGHT_OFF, BACKLIGHT_HIGH);
+    (min.min(max), max.max(min))
+}
+
+/// Tiny deterministic PRNG for flicker/burst modes (no external dep, no IO).
+pub struct Rng(u64);
+
+impl Rng {
+    pub fn new() -> Self {
+        let seed = Instant::now()
+            .elapsed()
+            .as_nanos()
+            .to_le_bytes()
+            .iter()
+            .fold(0x9e37_79b9_7f4a_7c15u64, |acc, &b| acc.wrapping_mul(1099511628211).wrapping_add(b as u64));
+        Rng(seed | 1)
+    }
+
+    /// Uniform in [0, max).
+    pub fn below(&mut self, max: u64) -> u64 {
+        self.0 ^= self.0 << 13;
+        self.0 ^= self.0 >> 7;
+        self.0 ^= self.0 << 17;
+        self.0.wrapping_rem(max.max(1))
+    }
 }
 
 /// Everything an effect loop needs; shared across effect threads.
@@ -98,9 +172,26 @@ pub struct EffectShared {
     pub driver: DriverMutex,
     pub params: Arc<EffectParams>,
     pub error: StdMutex<Option<String>>,
+    started: StdMutex<Instant>,
 }
 
 impl EffectShared {
+    fn new(driver: DriverMutex, params: Arc<EffectParams>) -> Arc<Self> {
+        Arc::new(Self {
+            driver,
+            params,
+            error: StdMutex::new(None),
+            started: StdMutex::new(Instant::now()),
+        })
+    }
+
+    /// Reset the auto-dim clock (called each time a mode is (re)started).
+    pub fn mark_start(&self) {
+        if let Ok(mut s) = self.started.lock() {
+            *s = Instant::now();
+        }
+    }
+
     pub fn report_error(&self, msg: String) {
         eprintln!("[glowfx] {msg}");
         if let Ok(mut e) = self.error.lock() {
@@ -117,6 +208,21 @@ impl EffectShared {
                 Err(e) => self.report_error(e),
             }
         }
+    }
+
+    /// Effect-level write with the optional auto-dim override applied:
+    /// once the mode has run longer than auto_dim_minutes, force level 0.
+    pub fn emit(&self, level: u8) {
+        let p = &self.params;
+        let dim_min = p.auto_dim_minutes.load(Ordering::Relaxed) as u64;
+        if dim_min > 0 {
+            let elapsed = self.started.lock().map(|s| s.elapsed().as_secs()).unwrap_or(0);
+            if elapsed > dim_min * 60 {
+                self.set_level(BACKLIGHT_OFF);
+                return;
+            }
+        }
+        self.set_level(level);
     }
 }
 
@@ -138,11 +244,7 @@ impl EffectManager {
     pub fn new(driver: Box<dyn BacklightDriver>) -> Arc<Self> {
         let params = Arc::new(EffectParams::default());
         let driver = Arc::new(StdMutex::new(driver));
-        let shared = Arc::new(EffectShared {
-            driver: Arc::clone(&driver),
-            params: Arc::clone(&params),
-            error: StdMutex::new(None),
-        });
+        let shared = EffectShared::new(Arc::clone(&driver), Arc::clone(&params));
         Arc::new(Self {
             _driver: driver,
             params,
@@ -182,8 +284,10 @@ impl EffectManager {
         let power = self.params.power.load(Ordering::Relaxed);
         let mode = if power { mode } else { EffectMode::Off };
 
-        let stop = Arc::new(AtomicBool::new(false));
         let shared = Arc::clone(&self.shared);
+        shared.mark_start();
+
+        let stop = Arc::new(AtomicBool::new(false));
         let stop_for_loop = Arc::clone(&stop);
         let handle = thread::spawn(move || run_effect(shared, stop_for_loop, mode));
 
@@ -215,6 +319,12 @@ fn run_effect(shared: Arc<EffectShared>, stop: Arc<AtomicBool>, mode: EffectMode
         EffectMode::Strobing => strobing::run(&shared, &stop),
         EffectMode::Audio => audio::run(Arc::clone(&shared), Arc::clone(&stop)),
         EffectMode::Battery => battery::run(Arc::clone(&shared), Arc::clone(&stop)),
+        EffectMode::Candle => candle::run(&shared, &stop),
+        EffectMode::Heartbeat => heartbeat::run(&shared, &stop),
+        EffectMode::Blink => blink::run(&shared, &stop),
+        EffectMode::Disco => disco::run(&shared, &stop),
+        EffectMode::Schedule => schedule::run(&shared, &stop),
+        EffectMode::Idle => idle::run(&shared, &stop),
     }
 }
 
@@ -234,7 +344,7 @@ fn run_static(shared: &EffectShared, stop: &AtomicBool) {
             .static_level
             .load(Ordering::Relaxed)
             .clamp(BACKLIGHT_OFF, BACKLIGHT_HIGH);
-        shared.set_level(l);
+        shared.emit(l);
         crate::effects::capped_sleep(300);
     }
 }
@@ -264,10 +374,64 @@ mod tests {
             EffectMode::Strobing,
             EffectMode::Audio,
             EffectMode::Battery,
+            EffectMode::Candle,
+            EffectMode::Heartbeat,
+            EffectMode::Blink,
+            EffectMode::Disco,
+            EffectMode::Schedule,
+            EffectMode::Idle,
             EffectMode::Off,
         ] {
             assert_eq!(EffectMode::from_name(m.name()), Some(m));
         }
         assert_eq!(EffectMode::from_name("nope"), None);
+    }
+
+    #[test]
+    fn level_range_orders_min_max() {
+        let p = EffectParams::default();
+        p.max_level.store(0, Ordering::Relaxed);
+        p.min_level.store(2, Ordering::Relaxed);
+        assert_eq!(level_range(&p), (0, 2));
+        p.min_level.store(7, Ordering::Relaxed);
+        assert_eq!(level_range(&p), (0, 2));
+    }
+
+    /// Drive a handful of the new effect loops against the real backlight and
+    /// assert they run bounded within {0,1,2} (skipped when no node exists).
+    #[test]
+    fn new_effect_loops_stay_bounded() {
+        use std::time::Duration;
+
+        let driver = crate::driver::detect_driver();
+        if !driver.is_supported() {
+            eprintln!("skipping live effect loop test (no backlight node)");
+            return;
+        }
+        let params = Arc::new(EffectParams::default());
+        let shared = EffectShared::new(Arc::new(StdMutex::new(driver)), params);
+
+        let runs: [(&str, fn(&EffectShared, &AtomicBool)); 4] = [
+            ("candle", candle::run),
+            ("blink", blink::run),
+            ("heartbeat", heartbeat::run),
+            ("disco", disco::run),
+        ];
+        for (name, run) in runs {
+            let s = Arc::clone(&shared);
+            let stop = Arc::new(AtomicBool::new(false));
+            let st = Arc::clone(&stop);
+            let h = thread::spawn(move || run(&s, &st));
+            thread::sleep(Duration::from_millis(700));
+            stop.store(true, Ordering::Relaxed);
+            let _ = h.join();
+            if let Ok(raw) =
+                std::fs::read_to_string("/sys/class/leds/platform::kbd_backlight/brightness")
+            {
+                let v: u8 = raw.trim().parse().unwrap_or(9);
+                assert!(v <= BACKLIGHT_HIGH, "{name} wrote out-of-range {v}");
+            }
+        }
+        shared.set_level(BACKLIGHT_HIGH);
     }
 }

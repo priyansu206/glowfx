@@ -15,6 +15,7 @@ use super::{capped_sleep, is_stopped, EffectShared};
 
 pub fn run(shared: Arc<EffectShared>, stop: Arc<AtomicBool>) {
     let rms = Arc::new(AtomicU32::new(0.0f32.to_bits()));
+    let mut prev = 0.0f32;
 
     let cap_shared = Arc::clone(&shared);
     let cap_stop = Arc::clone(&stop);
@@ -26,18 +27,31 @@ pub fn run(shared: Arc<EffectShared>, stop: Arc<AtomicBool>) {
         let v = rms_load(&rms);
         let sens = shared.params.sensitivity.load(Ordering::Relaxed) as f32 / 100.0;
 
-        // Higher sensitivity -> lower thresholds.
-        let low = (0.02 + (1.0 - sens) * 0.30).min(0.9);
-        let high = (0.10 + (1.0 - sens) * 0.40).max(low + 0.05);
-
-        let level = if v >= high {
-            2
-        } else if v >= low {
-            1
+        let level = if shared.params.audio_beat.load(Ordering::Relaxed) {
+            // Beat sync: flash on rising transients (kick/hit), else rest.
+            let rise = (v - prev).max(0.0);
+            prev = prev * 0.8 + v * 0.2;
+            let floor = (0.05 + (1.0 - sens) * 0.10).min(0.9);
+            if rise > 0.03 && v > floor {
+                2
+            } else if v >= floor {
+                1
+            } else {
+                0
+            }
         } else {
-            0
+            // Higher sensitivity -> lower thresholds.
+            let low = (0.02 + (1.0 - sens) * 0.30).min(0.9);
+            let high = (0.10 + (1.0 - sens) * 0.40).max(low + 0.05);
+            if v >= high {
+                2
+            } else if v >= low {
+                1
+            } else {
+                0
+            }
         };
-        shared.set_level(level);
+        shared.emit(level);
 
         // Throttled: audio never writes faster than 10 Hz regardless of capture rate.
         capped_sleep(120);
