@@ -114,6 +114,18 @@ const MODE_META: Record<Mode, ModeMeta> = {
       </svg>
     ),
   },
+  radar: {
+    title: "Radar",
+    description: "Rotating sweep with target blips",
+    icon: (
+      <svg viewBox="0 0 24 24" width="26" height="26">
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        <circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.5" />
+        <path d="M12 12 17 7" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+        <circle cx="15.5" cy="9.5" r="2" fill="currentColor" />
+      </svg>
+    ),
+  },
   morse: {
     title: "Morse Code",
     description: "Blink a typed message",
@@ -163,6 +175,7 @@ const MODE_ORDER: Mode[] = [
   "battery",
   "storm",
   "ripple",
+  "radar",
   "morse",
   "disco",
   "schedule",

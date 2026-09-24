@@ -8,6 +8,7 @@ pub mod breathing;
 pub mod disco;
 pub mod idle;
 pub mod morse;
+pub mod radar;
 pub mod ripple;
 pub mod schedule;
 pub mod storm;
@@ -36,6 +37,7 @@ pub enum EffectMode {
     Battery,
     Storm,
     Ripple,
+    Radar,
     Morse,
     Disco,
     Schedule,
@@ -53,6 +55,7 @@ impl EffectMode {
             EffectMode::Battery => "battery",
             EffectMode::Storm => "storm",
             EffectMode::Ripple => "ripple",
+            EffectMode::Radar => "radar",
             EffectMode::Morse => "morse",
             EffectMode::Disco => "disco",
             EffectMode::Schedule => "schedule",
@@ -70,6 +73,7 @@ impl EffectMode {
             "battery" => EffectMode::Battery,
             "storm" => EffectMode::Storm,
             "ripple" => EffectMode::Ripple,
+            "radar" => EffectMode::Radar,
             "morse" => EffectMode::Morse,
             "disco" => EffectMode::Disco,
             "schedule" => EffectMode::Schedule,
@@ -323,6 +327,7 @@ fn run_effect(shared: Arc<EffectShared>, stop: Arc<AtomicBool>, mode: EffectMode
         EffectMode::Battery => battery::run(Arc::clone(&shared), Arc::clone(&stop)),
         EffectMode::Storm => storm::run(&shared, &stop),
         EffectMode::Ripple => ripple::run(&shared, &stop),
+        EffectMode::Radar => radar::run(&shared, &stop),
         EffectMode::Morse => morse::run(&shared, &stop),
         EffectMode::Disco => disco::run(&shared, &stop),
         EffectMode::Schedule => schedule::run(&shared, &stop),
@@ -378,6 +383,7 @@ mod tests {
             EffectMode::Battery,
             EffectMode::Storm,
             EffectMode::Ripple,
+            EffectMode::Radar,
             EffectMode::Morse,
             EffectMode::Disco,
             EffectMode::Schedule,
@@ -413,9 +419,10 @@ mod tests {
         let params = Arc::new(EffectParams::default());
         let shared = EffectShared::new(Arc::new(StdMutex::new(driver)), params);
 
-        let runs: [(&str, fn(&EffectShared, &AtomicBool)); 4] = [
+        let runs: [(&str, fn(&EffectShared, &AtomicBool)); 5] = [
             ("storm", storm::run),
             ("ripple", ripple::run),
+            ("radar", radar::run),
             ("morse", morse::run),
             ("disco", disco::run),
         ];

@@ -30,6 +30,7 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
             &MenuItem::with_id(app, "mode_battery", "Battery Guard", true, None::<&str>)?,
             &MenuItem::with_id(app, "mode_storm", "Storm", true, None::<&str>)?,
             &MenuItem::with_id(app, "mode_ripple", "Ripple", true, None::<&str>)?,
+            &MenuItem::with_id(app, "mode_radar", "Radar", true, None::<&str>)?,
             &MenuItem::with_id(app, "mode_morse", "Morse Code", true, None::<&str>)?,
         ],
     )?;
@@ -58,6 +59,7 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
                 "mode_battery" => st_set_mode(app_handle, "battery"),
                 "mode_storm" => st_set_mode(app_handle, "storm"),
                 "mode_ripple" => st_set_mode(app_handle, "ripple"),
+                "mode_radar" => st_set_mode(app_handle, "radar"),
                 "mode_morse" => st_set_mode(app_handle, "morse"),
                 "show" => {
                     if let Some(win) = app_handle.get_webview_window("main") {

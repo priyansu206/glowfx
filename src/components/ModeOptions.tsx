@@ -17,7 +17,7 @@ interface ModeOptionsProps {
 
 const LEVEL_NAMES = ["Off", "Low", "High"];
 
-const MIN_MAX_MODES = ["breathing", "strobing", "storm", "ripple", "disco", "schedule", "idle"];
+const MIN_MAX_MODES = ["breathing", "strobing", "storm", "ripple", "radar", "disco", "schedule", "idle"];
 const WAVE_MODES = ["strobing"];
 
 function LevelPicker({

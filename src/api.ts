@@ -8,6 +8,7 @@ export const MODES = [
   "battery",
   "storm",
   "ripple",
+  "radar",
   "morse",
   "disco",
   "schedule",
