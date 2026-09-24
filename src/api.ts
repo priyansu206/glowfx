@@ -6,8 +6,6 @@ export const MODES = [
   "strobing",
   "audio",
   "battery",
-  "storm",
-  "ripple",
   "radar",
   "morse",
   "disco",

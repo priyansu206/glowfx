@@ -28,10 +28,9 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
             &MenuItem::with_id(app, "mode_strobing", "Strobing", true, None::<&str>)?,
             &MenuItem::with_id(app, "mode_audio", "Audio Visualizer", true, None::<&str>)?,
             &MenuItem::with_id(app, "mode_battery", "Battery Guard", true, None::<&str>)?,
-            &MenuItem::with_id(app, "mode_storm", "Storm", true, None::<&str>)?,
-            &MenuItem::with_id(app, "mode_ripple", "Ripple", true, None::<&str>)?,
             &MenuItem::with_id(app, "mode_radar", "Radar", true, None::<&str>)?,
             &MenuItem::with_id(app, "mode_morse", "Morse Code", true, None::<&str>)?,
+            &MenuItem::with_id(app, "mode_disco", "Disco", true, None::<&str>)?,
         ],
     )?;
     let show = MenuItem::with_id(app, "show", "Show GlowFX", true, None::<&str>)?;
@@ -57,10 +56,9 @@ pub fn create_tray(app: &AppHandle) -> tauri::Result<()> {
                 "mode_strobing" => st_set_mode(app_handle, "strobing"),
                 "mode_audio" => st_set_mode(app_handle, "audio"),
                 "mode_battery" => st_set_mode(app_handle, "battery"),
-                "mode_storm" => st_set_mode(app_handle, "storm"),
-                "mode_ripple" => st_set_mode(app_handle, "ripple"),
                 "mode_radar" => st_set_mode(app_handle, "radar"),
                 "mode_morse" => st_set_mode(app_handle, "morse"),
+                "mode_disco" => st_set_mode(app_handle, "disco"),
                 "show" => {
                     if let Some(win) = app_handle.get_webview_window("main") {
                         let _ = win.show();

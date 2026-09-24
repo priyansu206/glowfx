@@ -93,27 +93,6 @@ const MODE_META: Record<Mode, ModeMeta> = {
       </svg>
     ),
   },
-  storm: {
-    title: "Storm",
-    description: "Random lightning bursts",
-    icon: (
-      <svg viewBox="0 0 24 24" width="26" height="26">
-        <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor" />
-        <path d="M19 5v6M22 8h-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-      </svg>
-    ),
-  },
-  ripple: {
-    title: "Ripple",
-    description: "Sonar ping with decay dwell",
-    icon: (
-      <svg viewBox="0 0 24 24" width="26" height="26">
-        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.6" />
-        <circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.7" />
-        <circle cx="12" cy="12" r="1.5" fill="currentColor" />
-      </svg>
-    ),
-  },
   radar: {
     title: "Radar",
     description: "Rotating sweep with target blips",
@@ -173,8 +152,6 @@ const MODE_ORDER: Mode[] = [
   "strobing",
   "audio",
   "battery",
-  "storm",
-  "ripple",
   "radar",
   "morse",
   "disco",

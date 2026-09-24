@@ -16,9 +16,9 @@
 
 ## Effects
 - Static, Breathing, Strobing, Audio (RMS loopback/mic + beat sync), Battery
-  Guard (SOS blink at critical %, charge-complete pulse), Storm (random lightning
-  bursts), Ripple (sonar ping with decay + dwell), Morse (message -> dots/dashes),
-  Disco, Schedule (time-of-day), Idle (DBus ScreenSaver auto-fade).
+  Guard (SOS blink at critical %, charge-complete pulse), Radar (rotating sweep with
+  random target blips), Morse (message -> dots/dashes), Disco (random bursts),
+  Schedule (time-of-day), Idle (DBus ScreenSaver auto-fade).
 - Params: speed, sensitivity, static/min/max levels, waveform, audio_beat,
   auto_dim_minutes, critical_threshold, schedule hours, idle grace, battery
   threshold, tray_close. All live atomics — no effect restarts on change.

@@ -9,9 +9,7 @@ pub mod disco;
 pub mod idle;
 pub mod morse;
 pub mod radar;
-pub mod ripple;
 pub mod schedule;
-pub mod storm;
 pub mod strobing;
 
 use std::sync::atomic::{AtomicBool, AtomicU16, AtomicU32, AtomicU8, Ordering};
@@ -35,8 +33,6 @@ pub enum EffectMode {
     Strobing,
     Audio,
     Battery,
-    Storm,
-    Ripple,
     Radar,
     Morse,
     Disco,
@@ -53,8 +49,6 @@ impl EffectMode {
             EffectMode::Strobing => "strobing",
             EffectMode::Audio => "audio",
             EffectMode::Battery => "battery",
-            EffectMode::Storm => "storm",
-            EffectMode::Ripple => "ripple",
             EffectMode::Radar => "radar",
             EffectMode::Morse => "morse",
             EffectMode::Disco => "disco",
@@ -71,8 +65,6 @@ impl EffectMode {
             "strobing" => EffectMode::Strobing,
             "audio" => EffectMode::Audio,
             "battery" => EffectMode::Battery,
-            "storm" => EffectMode::Storm,
-            "ripple" => EffectMode::Ripple,
             "radar" => EffectMode::Radar,
             "morse" => EffectMode::Morse,
             "disco" => EffectMode::Disco,
@@ -325,8 +317,6 @@ fn run_effect(shared: Arc<EffectShared>, stop: Arc<AtomicBool>, mode: EffectMode
         EffectMode::Strobing => strobing::run(&shared, &stop),
         EffectMode::Audio => audio::run(Arc::clone(&shared), Arc::clone(&stop)),
         EffectMode::Battery => battery::run(Arc::clone(&shared), Arc::clone(&stop)),
-        EffectMode::Storm => storm::run(&shared, &stop),
-        EffectMode::Ripple => ripple::run(&shared, &stop),
         EffectMode::Radar => radar::run(&shared, &stop),
         EffectMode::Morse => morse::run(&shared, &stop),
         EffectMode::Disco => disco::run(&shared, &stop),
@@ -381,8 +371,6 @@ mod tests {
             EffectMode::Strobing,
             EffectMode::Audio,
             EffectMode::Battery,
-            EffectMode::Storm,
-            EffectMode::Ripple,
             EffectMode::Radar,
             EffectMode::Morse,
             EffectMode::Disco,
@@ -419,9 +407,7 @@ mod tests {
         let params = Arc::new(EffectParams::default());
         let shared = EffectShared::new(Arc::new(StdMutex::new(driver)), params);
 
-        let runs: [(&str, fn(&EffectShared, &AtomicBool)); 5] = [
-            ("storm", storm::run),
-            ("ripple", ripple::run),
+        let runs: [(&str, fn(&EffectShared, &AtomicBool)); 3] = [
             ("radar", radar::run),
             ("morse", morse::run),
             ("disco", disco::run),
