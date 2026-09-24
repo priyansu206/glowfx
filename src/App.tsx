@@ -25,6 +25,7 @@ import {
   setTrayClose,
   setWaveform,
   setIdleGrace,
+  setMorseText,
   type Mode,
   type StatusInfo,
 } from "./api";
@@ -92,41 +93,34 @@ const MODE_META: Record<Mode, ModeMeta> = {
       </svg>
     ),
   },
-  candle: {
-    title: "Candle",
-    description: "Random ember flicker",
+  storm: {
+    title: "Storm",
+    description: "Random lightning bursts",
     icon: (
       <svg viewBox="0 0 24 24" width="26" height="26">
-        <path
-          d="M12 2c1 2-1 3 0 5 1.4-1 2-2.5 1.5-4C15 4.5 16 6 16 8a4 4 0 1 1-8 0C8 5 10 2 12 2zM8 14h8v8H8z"
-          fill="currentColor"
-        />
+        <path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z" fill="currentColor" />
+        <path d="M19 5v6M22 8h-6" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
       </svg>
     ),
   },
-  heartbeat: {
-    title: "Heartbeat",
-    description: '"Lub-dub" double thump',
+  ripple: {
+    title: "Ripple",
+    description: "Sonar ping with decay dwell",
     icon: (
       <svg viewBox="0 0 24 24" width="26" height="26">
-        <path
-          d="M3 12h4l2-5 4 10 2-5h6"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
+        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.6" />
+        <circle cx="12" cy="12" r="5" fill="none" stroke="currentColor" strokeWidth="1.6" opacity="0.7" />
+        <circle cx="12" cy="12" r="1.5" fill="currentColor" />
       </svg>
     ),
   },
-  blink: {
-    title: "Blink",
-    description: "Rhythmic on/off",
+  morse: {
+    title: "Morse Code",
+    description: "Blink a typed message",
     icon: (
       <svg viewBox="0 0 24 24" width="26" height="26">
-        <circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" strokeWidth="1.8" />
-        <circle cx="12" cy="12" r="3.5" fill="currentColor" />
+        <rect x="3" y="8" width="8" height="3" rx="1.5" fill="currentColor" />
+        <rect x="3" y="14" width="18" height="3" rx="1.5" fill="currentColor" />
       </svg>
     ),
   },
@@ -167,9 +161,9 @@ const MODE_ORDER: Mode[] = [
   "strobing",
   "audio",
   "battery",
-  "candle",
-  "heartbeat",
-  "blink",
+  "storm",
+  "ripple",
+  "morse",
   "disco",
   "schedule",
   "idle",
@@ -191,6 +185,7 @@ const EMPTY_STATUS: StatusInfo = {
   day_start_hour: 7,
   night_start_hour: 22,
   idle_grace_s: 60,
+  morse_text: "HI",
   driver_supported: false,
   driver_path: "",
   driver_error: null,
@@ -270,6 +265,7 @@ export default function App() {
   const handleCritical = (v: number) => run("crit", () => setCriticalThreshold(v));
   const handleSchedule = (day: number, night: number) => run("schedule", () => setScheduleHours(day, night));
   const handleIdleGrace = (v: number) => run("idle", () => setIdleGrace(v));
+  const handleMorse = (text: string) => run("morse", () => setMorseText(text));
   const handleQuit = () => quitApp();
 
   const battery = status.battery ?? emptyBattery();
@@ -318,12 +314,14 @@ export default function App() {
               waveform={status.waveform}
               audioBeat={status.audio_beat}
               staticLevel={status.static_level}
+              morseText={status.morse_text}
               disabled={controlsDisabled}
               onMinLevel={handleMinLevel}
               onMaxLevel={handleMaxLevel}
               onWaveform={handleWaveform}
               onAudioBeat={handleAudioBeat}
               onStaticLevel={handleStatic}
+              onMorse={handleMorse}
             />
           </div>
           {status.audio_error && status.mode === "audio" && (

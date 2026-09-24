@@ -7,9 +7,10 @@ keyboard backlight effects with a dark-themed desktop UI.
 
 ## Features
 
-- **11 effects**: Off, Static, Breathing, Strobing, Audio (mic/loopback + beat sync),
-  Battery Guard (SOS at critical %, charge pulse), Candle, Heartbeat, Blink, Disco,
-  Schedule (time-of-day), and Idle (D-Bus screen-saver auto-fade).
+- **12 effects**: Off, Static, Breathing, Strobing, Audio (mic/loopback + beat sync),
+  Battery Guard (SOS at critical %, charge pulse), Storm (random lightning bursts),
+  Ripple (sonar ping), Morse (blinks a typed message), Schedule (time-of-day),
+  Idle (D-Bus screen-saver auto-fade), and Disco.
 - **Live tuning**: speed, sensitivity, level range, waveform — applied instantly via
   shared atomics, no effect restarts.
 - **Safety**: brightness quantized to hardware states `{0, 1, 2}`; writes capped at

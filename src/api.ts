@@ -6,9 +6,9 @@ export const MODES = [
   "strobing",
   "audio",
   "battery",
-  "candle",
-  "heartbeat",
-  "blink",
+  "storm",
+  "ripple",
+  "morse",
   "disco",
   "schedule",
   "idle",
@@ -38,6 +38,7 @@ export interface StatusInfo {
   day_start_hour: number;
   night_start_hour: number;
   idle_grace_s: number;
+  morse_text: string;
   driver_supported: boolean;
   driver_path: string;
   driver_error: string | null;
@@ -119,6 +120,10 @@ export function setScheduleHours(day: number, night: number): Promise<void> {
 
 export function setIdleGrace(seconds: number): Promise<void> {
   return invoke("set_idle_grace", { seconds });
+}
+
+export function setMorseText(text: string): Promise<void> {
+  return invoke("set_morse_text", { text });
 }
 
 export function quitApp(): Promise<void> {

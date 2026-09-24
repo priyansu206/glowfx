@@ -15,10 +15,10 @@
   `/etc/udev/rules.d/99-lenovo-glowfx.rules`).
 
 ## Effects
-- Static, Breathing (sine, min/max ranged), Strobing (square/decay), Audio
-  (RMS loopback/mic + beat-sync), Battery Guard (SOS blink at critical %,
-  charge-complete pulse), Candle, Heartbeat, Blink, Disco, Schedule
-  (time-of-day), Idle (DBus ScreenSaver auto-fade).
+- Static, Breathing, Strobing, Audio (RMS loopback/mic + beat sync), Battery
+  Guard (SOS blink at critical %, charge-complete pulse), Storm (random lightning
+  bursts), Ripple (sonar ping with decay + dwell), Morse (message -> dots/dashes),
+  Disco, Schedule (time-of-day), Idle (DBus ScreenSaver auto-fade).
 - Params: speed, sensitivity, static/min/max levels, waveform, audio_beat,
   auto_dim_minutes, critical_threshold, schedule hours, idle grace, battery
   threshold, tray_close. All live atomics — no effect restarts on change.

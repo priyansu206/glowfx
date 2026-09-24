@@ -137,6 +137,13 @@ fn set_idle_grace(state: State<'_, AppState>, seconds: u16) -> Result<(), String
 }
 
 #[tauri::command]
+fn set_morse_text(state: State<'_, AppState>, text: String) -> Result<(), String> {
+    let text: String = text.chars().take(64).collect();
+    *state.manager.params().morse_text.lock().unwrap() = text;
+    Ok(())
+}
+
+#[tauri::command]
 fn set_tray_close(state: State<'_, AppState>, enabled: bool) -> Result<(), String> {
     state.manager.params().tray_close.store(enabled, Ordering::Relaxed);
     Ok(())
@@ -159,6 +166,7 @@ struct StatusInfo {
     day_start_hour: u8,
     night_start_hour: u8,
     idle_grace_s: u16,
+    morse_text: String,
     driver_supported: bool,
     driver_path: String,
     driver_error: Option<String>,
@@ -193,6 +201,8 @@ fn get_status(state: State<'_, AppState>) -> StatusInfo {
         b
     });
 
+    let morse_text = p.morse_text.lock().unwrap().clone();
+
     StatusInfo {
         power,
         mode,
@@ -209,6 +219,7 @@ fn get_status(state: State<'_, AppState>) -> StatusInfo {
         day_start_hour: p.day_start_hour.load(Ordering::Relaxed),
         night_start_hour: p.night_start_hour.load(Ordering::Relaxed),
         idle_grace_s: p.idle_grace_s.load(Ordering::Relaxed),
+        morse_text,
         driver_supported,
         driver_path,
         driver_error,
@@ -383,6 +394,7 @@ pub fn run() {
             set_critical_threshold,
             set_schedule_hours,
             set_idle_grace,
+            set_morse_text,
             set_tray_close,
             get_status,
             install_udev,

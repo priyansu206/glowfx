@@ -4,13 +4,13 @@
 
 pub mod audio;
 pub mod battery;
-pub mod blink;
 pub mod breathing;
-pub mod candle;
 pub mod disco;
-pub mod heartbeat;
 pub mod idle;
+pub mod morse;
+pub mod ripple;
 pub mod schedule;
+pub mod storm;
 pub mod strobing;
 
 use std::sync::atomic::{AtomicBool, AtomicU16, AtomicU32, AtomicU8, Ordering};
@@ -34,9 +34,9 @@ pub enum EffectMode {
     Strobing,
     Audio,
     Battery,
-    Candle,
-    Heartbeat,
-    Blink,
+    Storm,
+    Ripple,
+    Morse,
     Disco,
     Schedule,
     Idle,
@@ -51,9 +51,9 @@ impl EffectMode {
             EffectMode::Strobing => "strobing",
             EffectMode::Audio => "audio",
             EffectMode::Battery => "battery",
-            EffectMode::Candle => "candle",
-            EffectMode::Heartbeat => "heartbeat",
-            EffectMode::Blink => "blink",
+            EffectMode::Storm => "storm",
+            EffectMode::Ripple => "ripple",
+            EffectMode::Morse => "morse",
             EffectMode::Disco => "disco",
             EffectMode::Schedule => "schedule",
             EffectMode::Idle => "idle",
@@ -68,9 +68,9 @@ impl EffectMode {
             "strobing" => EffectMode::Strobing,
             "audio" => EffectMode::Audio,
             "battery" => EffectMode::Battery,
-            "candle" => EffectMode::Candle,
-            "heartbeat" => EffectMode::Heartbeat,
-            "blink" => EffectMode::Blink,
+            "storm" => EffectMode::Storm,
+            "ripple" => EffectMode::Ripple,
+            "morse" => EffectMode::Morse,
             "disco" => EffectMode::Disco,
             "schedule" => EffectMode::Schedule,
             "idle" => EffectMode::Idle,
@@ -100,6 +100,7 @@ pub struct EffectParams {
     pub night_start_hour: AtomicU8,    // schedule: dim floor start (0..=23)
     pub idle_grace_s: AtomicU16,       // idle effect: seconds before fade (>=15)
     pub tray_close: AtomicBool,
+    pub morse_text: StdMutex<String>,  // morse effect: message to transmit
 }
 
 impl Default for EffectParams {
@@ -121,6 +122,7 @@ impl Default for EffectParams {
             night_start_hour: AtomicU8::new(22),
             idle_grace_s: AtomicU16::new(60),
             tray_close: AtomicBool::new(true),
+            morse_text: StdMutex::new("HI".into()),
         }
     }
 }
@@ -319,9 +321,9 @@ fn run_effect(shared: Arc<EffectShared>, stop: Arc<AtomicBool>, mode: EffectMode
         EffectMode::Strobing => strobing::run(&shared, &stop),
         EffectMode::Audio => audio::run(Arc::clone(&shared), Arc::clone(&stop)),
         EffectMode::Battery => battery::run(Arc::clone(&shared), Arc::clone(&stop)),
-        EffectMode::Candle => candle::run(&shared, &stop),
-        EffectMode::Heartbeat => heartbeat::run(&shared, &stop),
-        EffectMode::Blink => blink::run(&shared, &stop),
+        EffectMode::Storm => storm::run(&shared, &stop),
+        EffectMode::Ripple => ripple::run(&shared, &stop),
+        EffectMode::Morse => morse::run(&shared, &stop),
         EffectMode::Disco => disco::run(&shared, &stop),
         EffectMode::Schedule => schedule::run(&shared, &stop),
         EffectMode::Idle => idle::run(&shared, &stop),
@@ -374,9 +376,9 @@ mod tests {
             EffectMode::Strobing,
             EffectMode::Audio,
             EffectMode::Battery,
-            EffectMode::Candle,
-            EffectMode::Heartbeat,
-            EffectMode::Blink,
+            EffectMode::Storm,
+            EffectMode::Ripple,
+            EffectMode::Morse,
             EffectMode::Disco,
             EffectMode::Schedule,
             EffectMode::Idle,
@@ -412,9 +414,9 @@ mod tests {
         let shared = EffectShared::new(Arc::new(StdMutex::new(driver)), params);
 
         let runs: [(&str, fn(&EffectShared, &AtomicBool)); 4] = [
-            ("candle", candle::run),
-            ("blink", blink::run),
-            ("heartbeat", heartbeat::run),
+            ("storm", storm::run),
+            ("ripple", ripple::run),
+            ("morse", morse::run),
             ("disco", disco::run),
         ];
         for (name, run) in runs {

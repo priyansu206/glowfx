@@ -5,18 +5,20 @@ interface ModeOptionsProps {
   waveform: number;
   audioBeat: boolean;
   staticLevel: number;
+  morseText: string;
   disabled: boolean;
   onMinLevel: (v: number) => void;
   onMaxLevel: (v: number) => void;
   onWaveform: (v: number) => void;
   onAudioBeat: (on: boolean) => void;
   onStaticLevel: (v: number) => void;
+  onMorse: (text: string) => void;
 }
 
 const LEVEL_NAMES = ["Off", "Low", "High"];
 
-const MIN_MAX_MODES = ["breathing", "strobing", "candle", "heartbeat", "blink", "disco", "schedule", "idle"];
-const WAVE_MODES = ["strobing", "blink"];
+const MIN_MAX_MODES = ["breathing", "strobing", "storm", "ripple", "disco", "schedule", "idle"];
+const WAVE_MODES = ["strobing"];
 
 function LevelPicker({
   label,
@@ -56,12 +58,14 @@ export default function ModeOptions({
   waveform,
   audioBeat,
   staticLevel,
+  morseText,
   disabled,
   onMinLevel,
   onMaxLevel,
   onWaveform,
   onAudioBeat,
   onStaticLevel,
+  onMorse,
 }: ModeOptionsProps) {
   const showRange = MIN_MAX_MODES.includes(mode);
   const showWave = WAVE_MODES.includes(mode);
@@ -101,6 +105,19 @@ export default function ModeOptions({
               Beat sync
             </button>
           </div>
+        </div>
+      )}
+      {mode === "morse" && (
+        <div className="control-row">
+          <span className="control-label">Morse</span>
+          <input
+            type="text"
+            className="morse-input"
+            value={morseText}
+            maxLength={32}
+            disabled={disabled}
+            onChange={(e) => onMorse(e.target.value)}
+          />
         </div>
       )}
     </>

@@ -384,6 +384,30 @@ body {
   cursor: not-allowed;
 }
 
+.morse-input {
+  flex: 1;
+  max-width: 260px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  color: var(--text);
+  font: inherit;
+  font-size: 12.5px;
+  letter-spacing: 0.5px;
+  outline: none;
+  transition: border-color 0.12s ease;
+}
+
+.morse-input:focus {
+  border-color: var(--accent-strong);
+}
+
+.morse-input:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .num-input {
   width: 76px;
   padding: 8px 10px;
